@@ -1,8 +1,3 @@
-#
-# SPDX-FileCopyrightText: 2024 The Evolution X Project
-#
-# SPDX-License-Identifier: Apache-2.0
-#
 
 #!/bin/bash
 
@@ -78,78 +73,6 @@ apex_certificates=(
     com.qorvo.uwb
 )
 
-confirm() {
-    while true; do
-        read -r -p "$1 (yes/no): " input
-        case "$input" in
-            [yY][eE][sS]|[yY]) echo "yes"; return ;;
-            [nN][oO]|[nN]) echo "no"; return ;;
-            *) ;;
-        esac
-    done
-}
-
-prompt_key_size() {
-    while true; do
-        read -p "$1" input
-        if [[ "$input" == "2048" || "$input" == "4096" ]]; then
-            echo "$input"
-            break
-        fi
-    done
-}
-
-prompt() {
-    while true; do
-        read -p "$1" input
-        if [[ -n "$input" ]]; then
-            echo "$input"
-            break
-        fi
-    done
-}
-
-user_input() {
-    if [[ $(confirm "Do you want to customize the key size and subject?") == "yes" ]]; then
-        key_size=$(prompt_key_size "Enter the key size (2048 or 4096, APEX will always use 4096): ")
-        country_code=$(prompt "Enter the country code (e.g., US): ")
-        state=$(prompt "Enter the state or province (e.g., California): ")
-        city=$(prompt "Enter the city or locality (e.g., Mountain View): ")
-        org=$(prompt "Enter the organization (e.g., Android): ")
-        ou=$(prompt "Enter the organizational unit (e.g., Android): ")
-        cn=$(prompt "Enter the common name (e.g., Android): ")
-        email=$(prompt "Enter the email address (e.g., android@android.com): ")
-
-        echo "Subject information to be used:"
-        echo "Key Size: $key_size"
-        echo "Country Code: $country_code"
-        echo "State/Province: $state"
-        echo "City/Locality: $city"
-        echo "Organization (O): $org"
-        echo "Organizational Unit (OU): $ou"
-        echo "Common Name (CN): $cn"
-        echo "Email Address: $email"
-
-        if [[ $(confirm "Is this information correct?") != "yes" ]]; then
-            echo "Generation aborted."
-            exit 0
-        fi
-    else
-        key_size='2048'
-        country_code='US'
-        state='California'
-        city='Mountain View'
-        org='Android'
-        ou='Android'
-        cn='Android'
-        email='android@android.com'
-    fi
-
-    subject="/C=$country_code/ST=$state/L=$city/O=$org/OU=$ou/CN=$cn/emailAddress=$email"
-
-    generate_certificates
-}
-
 generate_certificates() {
     echo "Generating certificates..."
     local generated=false
@@ -161,14 +84,14 @@ generate_certificates() {
         else
             generated=true
             if [[ " ${certificates[*]} " == *" $certificate "* ]]; then
-                size=$key_size
+                size=4096
             else
                 size=4096
                 certificate="$certificate.certificate.override"
             fi
             echo | bash <(sed "s/2048/$size/" ../../../development/tools/make_key) \
                 "$certificate" \
-                "$subject"
+                "/C=US/ST=California/L=Mountain View/O=Android/OU=MatrixOS/CN=MatrixOS/emailAddress=dpenra.stha@gmail.com"
         fi
     done
 
@@ -221,4 +144,4 @@ generate_keys_mk() {
     echo "PRODUCT_EXTRA_RECOVERY_KEYS :=" >> keys.mk
 }
 
-user_input
+generate_certificates
